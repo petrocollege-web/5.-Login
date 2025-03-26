@@ -6,6 +6,7 @@
 1. Откройте `models/User.php`
 2. Перенесите код из ранее переименованной модели (например, `UserOld`)
 3. Добавьте к классу User `implements IdentityInterface`
+4. Измените код:
 
 ```php
 use yii\web\IdentityInterface;
