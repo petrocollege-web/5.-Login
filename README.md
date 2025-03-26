@@ -55,150 +55,89 @@ class User extends \yii\db\ActiveRecord implements IdentityInterface
 ---
 
 
-#### Шаг 2: Создание формы входа
+#### Шаг 2: Изменение формы входа
 
-1. Создаем `models/LoginForm.php`:
+1. Изменяем `models/LoginForm.php` (добавляем 'message' => 'Заполните поле' для обязательных полей):
 
 ```php
-namespace app\models;
-
-use yii\base\Model;
-
-class LoginForm extends Model
-{
-    public $username;
-    public $password;
-    public $rememberMe = true;
-    private $_user = false;
 
     public function rules()
     {
         return [
-            [['username', 'password'], 'required', 'message' => 'Заполните поле'],
+            [['username', 'password'], 'required', 'message' => 'Заполните поле'],   
             ['rememberMe', 'boolean'],
             ['password', 'validatePassword'],
         ];
     }
 
-    public function validatePassword($attribute)
-    {
-        if (!$this->hasErrors()) {
-            $user = $this->getUser();
-            if (!$user || !$user->validatePassword($this->password)) {
-                $this->addError($attribute, 'Неверное имя пользователя или пароль.');
-            }
-        }
-    }
 
-    public function login()
-    {
-        if ($this->validate()) {
-            return Yii::$app->user->login(
-                $this->getUser(),
-                $this->rememberMe ? 3600*24*30 : 0
-            );
-        }
-        return false;
-    }
-
-    protected function getUser()
-    {
-        if ($this->_user === false) {
-            $this->_user = User::findByUsername($this->username);
-        }
-        return $this->_user;
-    }
-}
 ```
 
-*картинка с (модель LoginForm)*
 
 ---
 
-#### Шаг 3: Создание контроллера для авторизации
-
-1. Модифицируем `controllers/SiteController.php`:
-
-```php
-public function actionLogin()
-{
-    if (!Yii::$app->user->isGuest) {
-        return $this->goHome();
-    }
-
-    $model = new LoginForm();
-    
-    if ($model->load(Yii::$app->request->post()) && $model->login()) {
-        return $this->goBack();
-    }
-
-    $model->password = '';
-    return $this->render('login', [
-        'model' => $model,
-    ]);
-}
-
-public function actionLogout()
-{
-    Yii::$app->user->logout();
-    return $this->goHome();
-}
-```
-
-*картинка с (действия login и logout в SiteController)*
-
----
-
-#### Шаг 4: Создание представления для входа
+#### Шаг 3: Изменяем представления для входа
 
 1. Создаем `views/site/login.php`:
 
 ```php
 <?php
-use yii\helpers\Html;
-use yii\widgets\ActiveForm;
 
-$this->title = 'Вход';
+
+$this->title = 'Авторизация';
+$this->params['breadcrumbs'][] = $this->title;
 ?>
-<h1><?= Html::encode($this->title) ?></h1>
+<div class="site-login">
+    <h1><?= Html::encode($this->title) ?></h1>
 
-<?php $form = ActiveForm::begin(); ?>
-    <?= $form->field($model, 'username')->textInput(['autofocus' => true]) ?>
-    <?= $form->field($model, 'password')->passwordInput() ?>
-    <?= $form->field($model, 'rememberMe')->checkbox() ?>
+    <p>Пожалуйста заполните все поля:</p>
+
+    <div class="row">
+        <div class="col-lg-5">
+
+            <?php $form = ActiveForm::begin([
+                'id' => 'login-form',
+                'fieldConfig' => [
+                    'template' => "{label}\n{input}\n{error}",
+                    'labelOptions' => ['class' => 'col-lg-1 col-form-label mr-lg-3'],
+                    'inputOptions' => ['class' => 'col-lg-3 form-control'],
+                    'errorOptions' => ['class' => 'col-lg-7 invalid-feedback'],
+                ],
+            ]); ?>
+
+            <?= $form->field($model, 'username')->textInput(['autofocus' => true])->label('Имя пользователя') ?>
+
+            <?= $form->field($model, 'password')->passwordInput()->label('Пароль') ?>
+
+            <?= $form->field($model, 'rememberMe')->checkbox([
+                'template' => "<div class=\"custom-control custom-checkbox\">{input} {label}</div>\n<div class=\"col-lg-8\">{error}</div>",
+            ])->label('Запомнить меня') ?>
+
+            <div class="form-group">
+                <div>
+                    <?= Html::submitButton('Войти', ['class' => 'btn btn-primary', 'name' => 'login-button']) ?>
+                </div>
+            </div>
+
+            <?php ActiveForm::end(); ?>
+
+            <div style="color:#999;">
+                Уважаемые члены комиссии, данные авторизации: <br> <strong>admin/admin</strong> или <strong>demo/demo</strong>.<br>
     
-    <div class="form-group">
-        <?= Html::submitButton('Войти', ['class' => 'btn btn-primary']) ?>
+            </div>
+
+        </div>
     </div>
-<?php ActiveForm::end(); ?>
+</div>
 
-<p>Ещё не зарегистрированы? <?= Html::a('Регистрация', ['user/register']) ?></p>
 ```
 
-*картинка с (представление формы входа)*
+![image](https://github.com/user-attachments/assets/8bd73f8c-f1fa-4938-8a08-ccf639db094b)
+
 
 ---
 
-#### Шаг 5: Настройка компонента user
-
-1. В `config/web.php` добавляем:
-
-```php
-'components' => [
-    'user' => [
-        'identityClass' => 'app\models\User',
-        'enableAutoLogin' => true,
-        'loginUrl' => ['site/login'],
-    ],
-    // ... другие компоненты ...
-],
-```
-
-*картинка с (настройка компонента user)*
-
----
-
-#### Шаг 6: Проверка авторизации в других контроллерах
+#### Шаг 4: Проверка авторизации в других контроллерах
 
 Для ограничения доступа к определенным действиям используем behaviors:
 
@@ -230,15 +169,15 @@ public function behaviors()
 
 #### Шаг 7: Проверка работы авторизации
 
-1. Перейдите по адресу `http://localhost/cleaning_portal/web/site/login`
-2. Введите данные зарегистрированного пользователя
-3. Проверьте:
+1. Введите данные зарегистрированного пользователя
+2. Проверьте:
    - После успешного входа происходит перенаправление
    - В верхнем меню отображается имя пользователя
    - Кнопка "Выйти" работает корректно
-   - Неавторизованные пользователи не могут создать заявку
 
-*картинка с (успешная авторизация пользователя)*
+
+![image](https://github.com/user-attachments/assets/4fe08fa3-a875-4245-8d38-fd67afa34ae3)
+
 
 ---
 
@@ -248,7 +187,6 @@ public function behaviors()
 1. Адаптированную модель User для авторизации
 2. Форму входа с валидацией
 3. Контроллер для обработки входа/выхода
-4. Настроили компонент user
-5. Добавили ограничения доступа
 
-Теперь система имеет полноценную авторизацию, интегрированную с нашей базой данных. Для административной панели потребуется дополнительная настройка RBAC, которую мы рассмотрим в следующей лекции.
+
+Теперь система имеет полноценную авторизацию, интегрированную с нашей базой данных.
