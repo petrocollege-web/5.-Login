@@ -162,3 +162,6 @@ $this->params['breadcrumbs'][] = $this->title;
 
 
 Теперь система имеет полноценную авторизацию, интегрированную с нашей базой данных.
+
+### [Следующая лекция](https://github.com/petrocollege-web/6.-Admin-panel)
+### [Предыдущая лекция](https://github.com/petrocollege-web/4.-Registration)
